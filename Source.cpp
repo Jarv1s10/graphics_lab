@@ -7,7 +7,8 @@
 using namespace mygal;
 
 
-const int RADIUS = 0.005, WIDTH = 800, HEIGHT = 800;
+const double RADIUS = 0.005;
+const int WIDTH = 800, HEIGHT = 800;
 bool LOCK_FLAG = false;
 constexpr float Offset = 1.0f;
 
@@ -33,7 +34,7 @@ public:
 	void drawPoints(sf::RenderWindow& window, const Diagram<double>& diagram)
 	{
 		for (const auto& site : diagram.getSites())
-			drawPoint(window, site.point, sf::Color(100, 250, 50));
+			drawPoint(window, site.point, sf::Color::Yellow);
 	}
 
 	void drawLines(sf::RenderWindow& window, Diagram<double>& diagram)
@@ -58,7 +59,7 @@ public:
 				{
 					auto origin = halfEdge->origin->point;
 					auto destination = halfEdge->destination->point;
-					drawEdge(window, origin, destination, sf::Color::Red);
+					drawEdge(window, origin, destination, sf::Color::Blue);
 				}
 				halfEdge = halfEdge->next;
 				if (halfEdge == start)
@@ -75,7 +76,7 @@ public:
 			for (const auto& j : triangulation.getNeighbors(i))
 			{
 				auto destination = diagram.getSite(j)->point;
-				drawEdge(window, origin, destination, sf::Color::Green);
+				drawEdge(window, origin, destination, sf::Color::Red);
 			}
 		}
 	}
@@ -104,6 +105,7 @@ private:
 
 int main()
 {
+	std::vector<sf::CircleShape> dots;
 	MainWindow mw;
 	auto settings = sf::ContextSettings();
 	settings.antialiasingLevel = 8;
@@ -123,6 +125,10 @@ int main()
 			else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left)
 			{
 				mw.onClick(event.mouseButton.x, event.mouseButton.y);
+				auto dot = sf::CircleShape(RADIUS);
+				dot.setFillColor(sf::Color::Yellow);
+				dot.setPosition(event.mouseButton.x / double(WIDTH) - RADIUS, event.mouseButton.y / double(HEIGHT) - RADIUS);
+				dots.push_back(dot);
 			}
 			else if (event.type == sf::Event::KeyReleased)
 			{
@@ -139,7 +145,11 @@ int main()
 		}
 
 		window.clear();
-		mw.drawPoints(window, diagram);
+		//mw.drawPoints(window, diagram);
+		for (const auto& d : dots)
+		{
+			window.draw(d);
+		}
 		mw.drawLines(window, diagram);
 		if (showTriangulation)
 			mw.drawTriangulation(window, diagram, triangulation);
