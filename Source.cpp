@@ -7,7 +7,7 @@
 using namespace mygal;
 
 
-const int RADIUS = 0.05, WIDTH = 800, HEIGHT = 800;
+const int RADIUS = 0.005, WIDTH = 800, HEIGHT = 800;
 bool LOCK_FLAG = false;
 constexpr float Offset = 1.0f;
 
@@ -95,10 +95,9 @@ private:
 	void drawPoint(sf::RenderWindow& window, Vector2<double> point, sf::Color color)
 	{
 		auto shape = sf::CircleShape(RADIUS);
-		shape.setPosition(sf::Vector2f(point.x - RADIUS, 1 - point.y - RADIUS));
+		shape.setPosition(sf::Vector2f(point.x - RADIUS, point.y - RADIUS));
 		shape.setFillColor(color);
 		window.draw(shape);
-		std::cout << "dot drawn" << std::endl;
 	}
 };
 
@@ -131,7 +130,6 @@ int main()
 				{
 					diagram = mw.onV();
 					triangulation = diagram.computeTriangulation();
-					std::cout << "voronoi calculated" << std::endl;
 				}
 				else if (event.key.code == sf::Keyboard::T)
 				{
