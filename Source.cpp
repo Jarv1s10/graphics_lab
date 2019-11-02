@@ -4,72 +4,149 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include "FortuneAlgorithm.h"
-using namespace std;
+using namespace mygal;
+
+
+const int RADIUS = 0.05, WIDTH = 800, HEIGHT = 800;
+bool LOCK_FLAG = false;
+constexpr float Offset = 1.0f;
 
 class MainWindow
 {
 public:
-	int RADIUS = 5, width = 800, hight = 600;
-	bool LOCK_FLAG = false;
 
-
-	void onClick(double x, double y, sf::CircleShape& circle)
-	{;
-		circle.setFillColor(sf::Color::Green);
-		circle.setPosition(x, y);
-	}
-
-	void onV(vector<sf::Vertex>& lines)
+	void onClick(double x, double y)
 	{
-		LOCK_FLAG = true;
+		points.push_back(Vector2<double>{x / double(WIDTH), y / double(HEIGHT)});
 	}
-	
+
+	Diagram<double> onV()
+	{
+		auto algorithm = FortuneAlgorithm<double>(points);
+		algorithm.construct();
+		algorithm.bound(Box<double>{-0.5, -0.5, 1.5, 1.5});
+		auto diagram = algorithm.getDiagram();
+		LOCK_FLAG = true;
+		return diagram;
+	}
+
+	void drawPoints(sf::RenderWindow& window, const Diagram<double>& diagram)
+	{
+		for (const auto& site : diagram.getSites())
+			drawPoint(window, site.point, sf::Color(100, 250, 50));
+	}
+
+	void drawLines(sf::RenderWindow& window, Diagram<double>& diagram)
+	{
+		for (const auto& site : diagram.getSites())
+		{
+			auto center = site.point;
+			auto face = site.face;
+			auto halfEdge = face->outerComponent;
+			if (halfEdge == nullptr)
+				continue;
+			while (halfEdge->prev != nullptr)
+			{
+				halfEdge = halfEdge->prev;
+				if (halfEdge == face->outerComponent)
+					break;
+			}
+			auto start = halfEdge;
+			while (halfEdge != nullptr)
+			{
+				if (halfEdge->origin != nullptr && halfEdge->destination != nullptr)
+				{
+					auto origin = halfEdge->origin->point;
+					auto destination = halfEdge->destination->point;
+					drawEdge(window, origin, destination, sf::Color::Red);
+				}
+				halfEdge = halfEdge->next;
+				if (halfEdge == start)
+					break;
+			}
+		}
+	}
+
+	void drawTriangulation(sf::RenderWindow& window, const Diagram<double>& diagram, const Triangulation& triangulation)
+	{
+		for (auto i = std::size_t(0); i < diagram.getNbSites(); ++i)
+		{
+			auto origin = diagram.getSite(i)->point;
+			for (const auto& j : triangulation.getNeighbors(i))
+			{
+				auto destination = diagram.getSite(j)->point;
+				drawEdge(window, origin, destination, sf::Color::Green);
+			}
+		}
+	}
+
+
+private:
+	std::vector<Vector2<double>> points;
+	void drawEdge(sf::RenderWindow& window, Vector2<double> origin, Vector2<double> destination, sf::Color color)
+	{
+		auto line = std::array<sf::Vertex, 2>
+		{
+			sf::Vertex(sf::Vector2f(origin.x, origin.y), color),
+				sf::Vertex(sf::Vector2f(destination.x, destination.y), color)
+		};
+		window.draw(line.data(), 2, sf::Lines);
+	}
+	void drawPoint(sf::RenderWindow& window, Vector2<double> point, sf::Color color)
+	{
+		auto shape = sf::CircleShape(RADIUS);
+		shape.setPosition(sf::Vector2f(point.x - RADIUS, 1 - point.y - RADIUS));
+		shape.setFillColor(color);
+		window.draw(shape);
+		std::cout << "dot drawn" << std::endl;
+	}
 };
 
 
 int main()
 {
 	MainWindow mw;
-	sf::RenderWindow window(sf::VideoMode(mw.width, mw.hight), "Voronoi");
-	vector<sf::CircleShape> dots;
-	vector<sf::Vertex> lines;
-	// run the program as long as the window is open
+	auto settings = sf::ContextSettings();
+	settings.antialiasingLevel = 8;
+	sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Voronoi", sf::Style::Default, settings);
+	window.setView(sf::View(sf::FloatRect(0.f, 0.f, 1.f, 1.f)));
+	window.setFramerateLimit(60);
+	auto showTriangulation = false;
+	auto diagram = mw.onV();
+	auto triangulation = diagram.computeTriangulation();
 	while (window.isOpen())
 	{
-		// check all the window's events that were triggered since the last iteration of the loop
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
-			// "close requested" event: we close the window
 			if (event.type == sf::Event::Closed)
 				window.close();
-			else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left && !mw.LOCK_FLAG)
+			else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left)
 			{
-				sf::CircleShape circle(mw.RADIUS);
-				mw.onClick(event.mouseButton.x - mw.RADIUS, event.mouseButton.y - mw.RADIUS, circle);
-				dots.push_back(circle);
+				mw.onClick(event.mouseButton.x, event.mouseButton.y);
 			}
 			else if (event.type == sf::Event::KeyReleased)
 			{
 				if (event.key.code == sf::Keyboard::V)
 				{
-					if (!mw.LOCK_FLAG)
-					{
-						mw.onV(lines);
-						cout << "voronoi calculated" << endl;
-					}
+					diagram = mw.onV();
+					triangulation = diagram.computeTriangulation();
+					std::cout << "voronoi calculated" << std::endl;
+				}
+				else if (event.key.code == sf::Keyboard::T)
+				{
+					showTriangulation = !showTriangulation;
 				}
 			}
 		}
 
 		window.clear();
-
-		for (const auto& r : dots)
-		{
-			window.draw(r);
-		}
+		mw.drawPoints(window, diagram);
+		mw.drawLines(window, diagram);
+		if (showTriangulation)
+			mw.drawTriangulation(window, diagram, triangulation);
 		window.display();
 	}
-	
+
 	return 0;
 }
