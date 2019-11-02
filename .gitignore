@@ -1,0 +1,9 @@
+*.dll
+Debug/
+SFML-2.5.1/
+x64/
+lab3_oop.sln
+lab3_oop.vcxproj
+lab3_oop.vcxproj.filters
+lab3_oop.vcxproj.user
+.vs/
