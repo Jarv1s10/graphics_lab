@@ -4,15 +4,14 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include "FortuneAlgorithm.h"
+#include "ConvexHull.h"
 using namespace mygal;
 
 
 const double RADIUS = 0.005;
 const int WIDTH = 800, HEIGHT = 800;
-bool LOCK_FLAG = false;
-constexpr float Offset = 1.0f;
 
-class MainWindow
+class VoronoiWindow
 {
 public:
 
@@ -27,17 +26,22 @@ public:
 		algorithm.construct();
 		algorithm.bound(Box<double>{-0.5, -0.5, 1.5, 1.5});
 		auto diagram = algorithm.getDiagram();
-		LOCK_FLAG = true;
 		return diagram;
 	}
 
-	void drawPoints(sf::RenderWindow& window, const Diagram<double>& diagram)
+	std::vector<Vector2<double>> onOne()
 	{
-		for (const auto& site : diagram.getSites())
-			drawPoint(window, site.point, sf::Color::Yellow);
+		auto hull = QuickHull().gethull(points);
+		return hull;
 	}
 
-	void drawLines(sf::RenderWindow& window, Diagram<double>& diagram)
+	std::vector<Vector2<double>> onTwo()
+	{
+		auto hull = Graham().gethull(points);
+		return hull;
+	}
+
+	void drawDiagram(sf::RenderWindow& window, Diagram<double>& diagram)
 	{
 		for (const auto& site : diagram.getSites())
 		{
@@ -81,40 +85,48 @@ public:
 		}
 	}
 
+	void drawConvexhull(sf::RenderWindow& window, std::vector<Vector2<double>> hull)
+	{
+		for (int i = 0; i < hull.size() - 1; i++)
+		{
+			drawEdge(window, hull[i], hull[i + 1], sf::Color::Green);
+		}
+		drawEdge(window, hull[0], hull[hull.size()-1], sf::Color::Green);
+	}
 
 private:
+
 	std::vector<Vector2<double>> points;
+
 	void drawEdge(sf::RenderWindow& window, Vector2<double> origin, Vector2<double> destination, sf::Color color)
 	{
 		auto line = std::array<sf::Vertex, 2>
 		{
 			sf::Vertex(sf::Vector2f(origin.x, origin.y), color),
-				sf::Vertex(sf::Vector2f(destination.x, destination.y), color)
+			sf::Vertex(sf::Vector2f(destination.x, destination.y), color)
 		};
 		window.draw(line.data(), 2, sf::Lines);
-	}
-	void drawPoint(sf::RenderWindow& window, Vector2<double> point, sf::Color color)
-	{
-		auto shape = sf::CircleShape(RADIUS);
-		shape.setPosition(sf::Vector2f(point.x - RADIUS, point.y - RADIUS));
-		shape.setFillColor(color);
-		window.draw(shape);
 	}
 };
 
 
 int main()
 {
-	std::vector<sf::CircleShape> dots;
-	MainWindow mw;
+	VoronoiWindow vw;
+
 	auto settings = sf::ContextSettings();
 	settings.antialiasingLevel = 8;
-	sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Voronoi", sf::Style::Default, settings);
+	sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Voronoi / Convex hull", sf::Style::Default, settings);
 	window.setView(sf::View(sf::FloatRect(0.f, 0.f, 1.f, 1.f)));
 	window.setFramerateLimit(60);
-	auto showTriangulation = false;
-	auto diagram = mw.onV();
+	std::vector<sf::CircleShape> dots;
+
+
+	auto showTriangulation = false, showDiagram = false, showHull = false;
+	auto diagram = vw.onV();
 	auto triangulation = diagram.computeTriangulation();
+	auto hull = vw.onOne();
+
 	while (window.isOpen())
 	{
 		sf::Event event;
@@ -124,7 +136,7 @@ int main()
 				window.close();
 			else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left)
 			{
-				mw.onClick(event.mouseButton.x, event.mouseButton.y);
+				vw.onClick(event.mouseButton.x, event.mouseButton.y);
 				auto dot = sf::CircleShape(RADIUS);
 				dot.setFillColor(sf::Color::Yellow);
 				dot.setPosition(event.mouseButton.x / double(WIDTH) - RADIUS, event.mouseButton.y / double(HEIGHT) - RADIUS);
@@ -134,25 +146,38 @@ int main()
 			{
 				if (event.key.code == sf::Keyboard::V)
 				{
-					diagram = mw.onV();
+					diagram = vw.onV();
 					triangulation = diagram.computeTriangulation();
+					showDiagram = !showDiagram;
 				}
 				else if (event.key.code == sf::Keyboard::T)
 				{
 					showTriangulation = !showTriangulation;
 				}
+				else if (event.key.code == sf::Keyboard::Num1)
+				{
+					hull = vw.onOne();
+					showHull = !showHull;
+				}
+				else if (event.key.code == sf::Keyboard::Num2)
+				{
+					auto hull = vw.onTwo();
+					showHull = !showHull;
+				}
 			}
 		}
 
 		window.clear();
-		//mw.drawPoints(window, diagram);
 		for (const auto& d : dots)
 		{
 			window.draw(d);
 		}
-		mw.drawLines(window, diagram);
+		if(showDiagram)
+			vw.drawDiagram(window, diagram);
 		if (showTriangulation)
-			mw.drawTriangulation(window, diagram, triangulation);
+			vw.drawTriangulation(window, diagram, triangulation);
+		if (showHull)
+			vw.drawConvexhull(window, hull);
 		window.display();
 	}
 

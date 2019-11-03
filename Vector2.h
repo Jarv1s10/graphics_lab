@@ -229,7 +229,15 @@ Vector2<T> operator*(Vector2<T> vec, T t)
 {
     return t * vec;
 }
-
+template<typename T>
+bool operator<(Vector2<T> lhs, Vector2<T> rhs)
+{
+	if (lhs.x != rhs.x)
+		return lhs.x < rhs.x;
+	if (lhs.y < rhs.y)
+		return true;
+	return false;
+}
 /**
  * \relates Vector2
  * \brief Insert a vector in a stream
