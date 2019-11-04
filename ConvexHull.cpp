@@ -137,8 +137,7 @@ void Graham::convexHull(vector<mygal::Vector2<double>> points)
 
 		// Pick the bottom-most or chose the left 
 		// most point in case of tie 
-		if ((y < ymin) || (ymin == y &&
-			points[i].x < points[min].x))
+		if ((y < ymin) || (ymin == y && points[i].x < points[min].x))
 			ymin = points[i].y, min = i;
 	}
 
@@ -200,6 +199,35 @@ vector<mygal::Vector2<double>> Graham::gethull(vector<mygal::Vector2<double>> a)
 	}
 	reverse(begin(res), end(res));
 	return res;
+}
+
+/////////////////////////////
+
+vector<mygal::Vector2<double>> Andrew::gethull(vector<mygal::Vector2<double>> P)
+{
+	size_t n = P.size(), k = 0;
+	if (n <= 3) return P;
+	vector<mygal::Vector2<double>> H(2 * n);
+
+	// Sort points lexicographically
+	sort(P.begin(), P.end());
+
+	// Build lower hull
+	for (size_t i = 0; i < n; ++i) {
+		while (k >= 2 && cross(H[k - 2], H[k - 1], P[i]) <= 0) 
+			k--;
+		H[k++] = P[i];
+	}
+
+	// Build upper hull
+	for (size_t i = n - 1, t = k + 1; i > 0; --i) {
+		while (k >= t && cross(H[k - 2], H[k - 1], P[i - 1]) <= 0) 
+			k--;
+		H[k++] = P[i - 1];
+	}
+
+	H.resize(k - 1);
+	return H;
 }
 
 

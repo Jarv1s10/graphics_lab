@@ -11,7 +11,7 @@ using namespace mygal;
 const double RADIUS = 0.005;
 const int WIDTH = 800, HEIGHT = 800;
 
-class VoronoiWindow
+class MainWindow
 {
 public:
 
@@ -38,6 +38,12 @@ public:
 	std::vector<Vector2<double>> onTwo()
 	{
 		auto hull = Graham().gethull(points);
+		return hull;
+	}
+
+	std::vector<Vector2<double>> onThree()
+	{
+		auto hull = Andrew().gethull(points);
 		return hull;
 	}
 
@@ -85,13 +91,13 @@ public:
 		}
 	}
 
-	void drawConvexhull(sf::RenderWindow& window, std::vector<Vector2<double>> hull)
+	void drawConvexhull(sf::RenderWindow& window, std::vector<Vector2<double>> hull, sf::Color color)
 	{
 		for (int i = 0; i < hull.size() - 1; i++)
 		{
-			drawEdge(window, hull[i], hull[i + 1], sf::Color::Green);
+			drawEdge(window, hull[i], hull[i + 1], color);
 		}
-		drawEdge(window, hull[0], hull[hull.size()-1], sf::Color::Green);
+		drawEdge(window, hull[0], hull[hull.size()-1], color);
 	}
 
 private:
@@ -112,7 +118,7 @@ private:
 
 int main()
 {
-	VoronoiWindow vw;
+	MainWindow mw;
 
 	auto settings = sf::ContextSettings();
 	settings.antialiasingLevel = 8;
@@ -123,9 +129,10 @@ int main()
 
 
 	auto showTriangulation = false, showDiagram = false, showHull = false;
-	auto diagram = vw.onV();
+	sf::Color color;
+	auto diagram = mw.onV();
 	auto triangulation = diagram.computeTriangulation();
-	auto hull = vw.onOne();
+	auto hull = mw.onOne();
 
 	while (window.isOpen())
 	{
@@ -136,7 +143,7 @@ int main()
 				window.close();
 			else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left)
 			{
-				vw.onClick(event.mouseButton.x, event.mouseButton.y);
+				mw.onClick(event.mouseButton.x, event.mouseButton.y);
 				auto dot = sf::CircleShape(RADIUS);
 				dot.setFillColor(sf::Color::Yellow);
 				dot.setPosition(event.mouseButton.x / double(WIDTH) - RADIUS, event.mouseButton.y / double(HEIGHT) - RADIUS);
@@ -146,7 +153,7 @@ int main()
 			{
 				if (event.key.code == sf::Keyboard::V)
 				{
-					diagram = vw.onV();
+					diagram = mw.onV();
 					triangulation = diagram.computeTriangulation();
 					showDiagram = !showDiagram;
 				}
@@ -156,13 +163,21 @@ int main()
 				}
 				else if (event.key.code == sf::Keyboard::Num1)
 				{
-					hull = vw.onOne();
+					hull = mw.onOne();
 					showHull = !showHull;
+					color = sf::Color::Green;
 				}
 				else if (event.key.code == sf::Keyboard::Num2)
 				{
-					auto hull = vw.onTwo();
+					auto hull = mw.onTwo();
 					showHull = !showHull;
+					color = sf::Color::Magenta;
+				}
+				else if (event.key.code == sf::Keyboard::Num3)
+				{
+					hull = mw.onThree();
+					showHull = !showHull;
+					color = sf::Color::Yellow;
 				}
 			}
 		}
@@ -173,11 +188,11 @@ int main()
 			window.draw(d);
 		}
 		if(showDiagram)
-			vw.drawDiagram(window, diagram);
+			mw.drawDiagram(window, diagram);
 		if (showTriangulation)
-			vw.drawTriangulation(window, diagram, triangulation);
+			mw.drawTriangulation(window, diagram, triangulation);
 		if (showHull)
-			vw.drawConvexhull(window, hull);
+			mw.drawConvexhull(window, hull, color);
 		window.display();
 	}
 

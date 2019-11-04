@@ -234,9 +234,8 @@ bool operator<(Vector2<T> lhs, Vector2<T> rhs)
 {
 	if (lhs.x != rhs.x)
 		return lhs.x < rhs.x;
-	if (lhs.y < rhs.y)
-		return true;
-	return false;
+	return lhs.y < rhs.y;
+	
 }
 /**
  * \relates Vector2

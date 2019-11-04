@@ -23,7 +23,6 @@ private:
 };
 
 
-
 class Graham
 {
 public:
@@ -40,4 +39,19 @@ private:
 	
 	void convexHull(vector<mygal::Vector2<double>> points);
 };
+
+
+class Andrew
+{
+public:
+	vector<mygal::Vector2<double>> gethull(vector<mygal::Vector2<double>> P);
+private:
+	double cross(const mygal::Vector2<double>& O, const mygal::Vector2<double>& A, const mygal::Vector2<double>& B)
+	{
+		return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);
+	}
+};
+
+
+
 
