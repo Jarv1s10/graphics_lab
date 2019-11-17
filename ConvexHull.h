@@ -14,6 +14,7 @@ using namespace std;
 class QuickHull
 {
 public:
+
 	vector<mygal::Vector2<double>> gethull(vector<mygal::Vector2<double>> a);
 private:
 	set<mygal::Vector2<double>> hull;
